@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -22,7 +22,6 @@ import wandb
 from logger import init_logger, Logger
 from attack import attack_dataset
 from replay_buffer import ReplayBuffer
-# from networks import VectorizedLinear, Scalar
 from attack import Evaluation_Attacker
 
 # general utils

@@ -23,25 +23,6 @@ MODEL_PATH = {
 }
 
 
-class Scalar(nn.Module):
-    def __init__(self, init_value: float):
-        super().__init__()
-        self.constant = nn.Parameter(torch.tensor(init_value, dtype=torch.float32))
-
-    def forward(self) -> nn.Parameter:
-        return self.constant
-
-
-def get_policy_kl(policy, observation, noised_obs):
-    _, policy_mean, policy_log_std, _, *_ = policy.stochastic_policy(observation)
-    _, noised_policy_mean, noised_policy_log_std, _, *_ = policy.stochastic_policy(noised_obs)
-    action_dist = torch.distributions.Normal(policy_mean, policy_log_std.exp())
-    noised_action_dist = torch.distributions.Normal(noised_policy_mean, noised_policy_log_std.exp())
-
-    kl_loss = kl_divergence(action_dist, noised_action_dist).sum(axis=-1) + kl_divergence(noised_action_dist, action_dist).sum(axis=-1)
-    return kl_loss
-
-
 def get_policy_mse(policy, observation, noised_obs):
     policy_mean = policy.batch_act(observation)
     noised_policy_mean = policy.batch_act(noised_obs)
@@ -114,14 +95,10 @@ class Evaluation_Attacker:
         return noised_observation.squeeze(0)
 
     def load_model(self):
-        model_path = os.path.join(MODEL_PATH[self.agent_name], self.env_name)
-        for root, dirs, files in os.walk(model_path):
-            if f"{self.agent_name}_{self.env_name}" in root:
-                model_path = os.path.join(root, "3000.pt")
-                break
+        model_path = os.path.join(self.model_path, self.env_name, "3000.pt")
         state_dict = torch.load(model_path, map_location=ptu.device)
         if self.agent_name == "IQL":
-            from IQL import DeterministicPolicy, TwinQ
+            from IQL import DeterministicPolicy
 
             actor_dropout = None
             key = self.env_name.split("-")[0]
@@ -210,21 +187,16 @@ class Attack:
             self.attack_indexs, self.original_indexs = self.sample_indexs()
 
     def load_model(self):
-        model_path = os.path.join(self.model_path, self.env_name)
-        for root, dirs, files in os.walk(model_path):
-            if f"{self.agent_name}_{self.env_name}" in root:
-                model_path = os.path.join(root, "3000.pt")
-                break
+        model_path = os.path.join(self.model_path, self.env_name, "3000.pt")
         state_dict = torch.load(model_path, map_location=self.device)
         if self.agent_name == "IQL":
-            from IQL import DeterministicPolicy, TwinQ
+            from IQL import TwinQ
 
             self.critic = (
                 TwinQ(self.state_dim, self.action_dim, n_hidden=2)
                 .to(self.device)
                 .eval()
             )
-            # self.actor.load_state_dict(state_dict["actor"])
             self.critic.load_state_dict(state_dict["qf"])
         else:
             raise NotImplementedError
@@ -253,12 +225,6 @@ class Attack:
     def loss_Q_for_act(self, para, observation, action, std):
         noised_act = action + para * std
         qvalue = self.critic(observation, noised_act)
-        return qvalue.mean()
-
-    def loss_Q_for_next_obs(self, para, observation, action, std):
-        noised_obs = observation + para * std
-        action = self.actor.batch_act(noised_obs, self.device)
-        qvalue = self.critic(noised_obs, action)
         return qvalue.mean()
 
     def loss_Q_for_rew(self):
@@ -377,42 +343,6 @@ class Attack:
 
         self.save_dataset(attack_rew)
         dataset[self.corruption_tag][self.attack_indexs] = attack_rew
-        return dataset
-
-    def corrupt_next_obs(self, dataset):
-        # load original obs
-        original_obs = self.dataset[self.corruption_tag][self.attack_indexs].copy()
-        std = np.std(self.dataset[self.corruption_tag], axis=0, keepdims=True)
-
-        if self.corruption_random:
-            std = np.std(self.dataset[self.corruption_tag], axis=0, keepdims=True)
-            attack_obs = original_obs + self.sample_data(original_obs) * std
-            self.logger.info(f"Random attack {self.corruption_tag}")
-        else:
-            self.load_model()
-
-            std_torch = torch.from_numpy(std).to(self.device)
-            original_obs_torch = torch.from_numpy(original_obs.copy()).to(self.device)
-
-            # adversarial attack obs
-            attack_obs = np.zeros_like(original_obs)
-            split = 10
-            pointer = 0
-            M = original_obs.shape[0]
-            for i in range(split):
-                number = M // split if i < split - 1 else M - pointer
-                temp_obs = original_obs_torch[pointer : pointer + number]
-                para = self.sample_para(temp_obs, std_torch)
-                para = self.optimize_para(para, std_torch, temp_obs)
-                noise = para.cpu().numpy()
-                attack_obs[pointer : pointer + number] = noise + temp_obs.cpu().numpy()
-                pointer += number
-
-            self.clear_gpu_cache()
-            self.logger.info(f"Adversarial attack {self.corruption_tag}")
-
-        self.save_dataset(attack_obs)
-        dataset[self.corruption_tag][self.attack_indexs] = attack_obs
         return dataset
 
     def clear_gpu_cache(self):

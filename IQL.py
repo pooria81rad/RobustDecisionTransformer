@@ -20,7 +20,6 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 from dataclasses import dataclass
 from tqdm import trange
 from logger import init_logger, Logger
-from select_data import select_fn
 from attack import attack_dataset
 from replay_buffer import ReplayBuffer
 from networks import MLP
@@ -417,8 +416,6 @@ def train(config: TrainConfig, logger: Logger):
         dataset, attack_indexs = attack_dataset(config, dataset, logger)
 
     dataset = d4rl.qlearning_dataset(env, dataset, terminate_on_end=True)
-    if config.selection_agent != "none":
-        dataset = select_fn(config, dataset, logger)
 
     dataset, state_mean, state_std = func.normalize_dataset(config, dataset)
 

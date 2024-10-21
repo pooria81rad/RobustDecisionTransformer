@@ -20,7 +20,7 @@ import dt_functions as dt_func
 
 from logger import init_logger, Logger
 from attack import Evaluation_Attacker
-from utils import RunningMeanStd
+from run_mean_std import RunningMeanStd
 
 
 @dataclass
@@ -74,7 +74,6 @@ class TrainConfig:
     use_wandb: int = 0
     group: str = "2024062305"
     env: str = "walker2d-medium-replay-v2"
-    # env: str = "antmaze-large-play-v2"
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     # dataset
     down_sample: bool = True
@@ -88,14 +87,14 @@ class TrainConfig:
     ###### corruption
     corruption_agent: str = "IQL"
     corruption_seed: int = 2023
-    corruption_mode: str = "none"  # none, random, adversarial
-    corruption_obs: float = 0.0
+    corruption_mode: str = "adversarial"  # none, random, adversarial
+    corruption_obs: float = 0.2
     corruption_act: float = 0.0
     corruption_rew: float = 0.0
     corruption_rate: float = 0.3
     use_original: int = 0  # 0 or 1
     same_index: int = 0
-    froce_attack: int = 0
+    froce_attack: int = 1
 
     def __post_init__(self):
         # target_returns and reward_scale
@@ -176,21 +175,18 @@ class TrainConfig:
                 self.correct_thershold = (6.0, 6.0)
                 self.correct_freq = 10
         if self.env.split("-")[0] in ["door", "pen", "hammer", "relocate"]:
+            self.reward_coef = 1.0
             self.embedding_dropout = 0.1
             if self.corruption_obs > 0.0:
-                self.reward_coef = 0.1
                 self.wmse_coef = (0.1, 0.0)
                 self.correct_thershold = None
             if self.corruption_act > 0.0:
-                self.reward_coef = 1.0
                 self.wmse_coef = (10.0, 0.0)
                 self.correct_thershold = (6.0, 0.0)
             if self.corruption_rew > 0.0:
-                self.reward_coef = 1.0
                 self.wmse_coef = (0.1, 0.1)
                 self.correct_thershold = (0.0, 6.0)
             if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                self.reward_coef = 0.1
                 self.wmse_coef = (0.1, 0.1)
                 self.correct_thershold = (6.0, 6.0)
                 self.correct_freq = 10

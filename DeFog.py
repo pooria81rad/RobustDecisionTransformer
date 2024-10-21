@@ -1,12 +1,11 @@
 # inspiration:
-# 1. https://github.com/kzl/decision-transformer/blob/master/gym/decision_transformer/models/decision_transformer.py  # noqa
-# 2. https://github.com/karpathy/minGPT
+# 1. https://github.com/hukz18/DeFog  # noqa
 import os
 import traceback
 import json
 import time
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 import d4rl  # noqa
@@ -25,7 +24,6 @@ import functions as func
 from networks import TransformerBlock
 from logger import init_logger, Logger
 from attack import attack_dataset
-from CQL import Scalar
 from drop_fn import get_drop_fn
 from attack import Evaluation_Attacker
 
@@ -75,7 +73,6 @@ class TrainConfig:
     use_wandb: int = 0
     group: str = "2023082100"
     env: str = "walker2d-medium-replay-v2"
-    # env: str = "antmaze-large-play-v2"
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     # evaluation params
     target_returns: Tuple[float, ...] = (12000.0, 6000.0)

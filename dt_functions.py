@@ -48,11 +48,9 @@ def load_d4rl_trajectories(
         )
         dataset = gym.make(env_name).get_dataset(h5path=h5path)
 
-    attack_num = 0
     attack_mask = np.ones_like(dataset["rewards"]) * -1
     if config.corruption_mode != "none":
         dataset, attack_indexs = attack_dataset(config, dataset, logger)
-        attack_num = len(attack_indexs)
         attack_mask[attack_indexs] = 1
     dataset["attack_mask"] = attack_mask
 

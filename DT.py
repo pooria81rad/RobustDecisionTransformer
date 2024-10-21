@@ -65,7 +65,6 @@ class TrainConfig:
     use_wandb: int = 0
     group: str = "2023082100"
     env: str = "walker2d-medium-replay-v2"
-    # env: str = "antmaze-large-play-v2"
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     # dataset
     down_sample: bool = True

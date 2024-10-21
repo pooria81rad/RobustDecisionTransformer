@@ -75,7 +75,6 @@ class TrainConfig:
     # Wandb logging
     use_wandb: int = 0
     group: str = "2023082100"
-    # env: str = "antmaze-large-play-v2"  # OpenAI gym environment name
     env: str = "walker2d-medium-replay-v2"
     seed: int = 1
     # evaluation params
@@ -105,8 +104,6 @@ class TrainConfig:
     froce_attack: int = 0
 
     def __post_init__(self):
-        if self.checkpoints_path is not None:
-            self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
         if self.env.startswith("antmaze"):
             self.num_epochs = 1000
             self.buffer_size = 1000000
@@ -787,12 +784,6 @@ def train(config: TrainConfig, logger: Logger):
         config.device,
     )
     buffer.load_d4rl_dataset(dataset)
-
-    if config.checkpoints_path is not None:
-        logger.info(f"Checkpoints path: {config.checkpoints_path}")
-        os.makedirs(config.checkpoints_path, exist_ok=True)
-        with open(os.path.join(config.checkpoints_path, "config.yaml"), "w") as f:
-            pyrallis.dump(config, f)
 
     actor = TanhGaussianPolicy(
         state_dim,

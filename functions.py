@@ -151,6 +151,7 @@ def return_reward_range(dataset, max_episode_steps):
     assert sum(lengths) == len(dataset["rewards"])
     return min(returns), max(returns)
 
+
 def modify_reward_for_CQL(
     dataset: Dict,
     env_name: str,
@@ -163,6 +164,7 @@ def modify_reward_for_CQL(
         dataset["rewards"] /= max_ret - min_ret
         dataset["rewards"] *= max_episode_steps
     dataset["rewards"] = dataset["rewards"] * reward_scale + reward_bias
+
 
 def modify_reward(dataset, env_name, max_episode_steps=1000):
     if any(s in env_name for s in ("halfcheetah", "hopper", "walker2d")):
@@ -201,124 +203,6 @@ def normalize_dataset(config, dataset):
             dataset["next_observations"], state_mean, state_std
         )
     return dataset, state_mean, state_std
-
-
-@torch.no_grad()
-def eval_value(config, dataset, indexs, critic, split=20):
-    act = torch.from_numpy(dataset["actions"][indexs]).to(config.device)
-    obs = torch.from_numpy(dataset["observations"][indexs]).to(config.device)
-
-    pointer = 0
-    M = act.shape[0]
-    q_values = []
-    for i in range(split):
-        number = M // split if i < split - 1 else M - pointer
-        temp_obs = obs[pointer : pointer + number]
-        temp_act = act[pointer : pointer + number]
-        temp_q = critic(temp_obs, temp_act)
-        q_values.append(temp_q)
-        pointer += number
-    q_values = torch.hstack(q_values)
-
-    q_mean = q_values.mean(dim=0).mean(dim=-1)
-    q_std = q_values.std(dim=0).mean(dim=-1)
-    return q_mean.item(), q_std.item()
-
-
-def debug_data_value(config, dataset, critic):
-    if config.corruption_obs:
-        corruption_tag = "obs"
-    if config.corruption_act:
-        corruption_tag = "act"
-    if config.corruption_rew:
-        corruption_tag = "rew"
-    if config.corruption_next_obs:
-        corruption_tag = "next_obs"
-    dataset_file = f"{config.corruption_agent}_{config.corruption_mode}_{corruption_tag}_corrupt{config.corruption_range}_rate{config.corruption_rate}.pth"
-    dataset_path = os.path.expanduser(
-        os.path.join(config.dataset_path, "log_attack_data", config.env, dataset_file)
-    )
-    attack_dataset = torch.load(dataset_path)
-    print(f"Load new dataset from {dataset_path}")
-    attacked_indexs, original_indexs = (
-        attack_dataset["attack_indexs"],
-        attack_dataset["original_indexs"],
-    )
-    att_q_mean, att_q_std = eval_value(
-        config, dataset, attacked_indexs, critic, split=20
-    )
-    ori_q_mean, ori_q_std = eval_value(
-        config, dataset, original_indexs, critic, split=20
-    )
-    log_dict = {
-        "att_q_mean": att_q_mean,
-        "att_q_std": att_q_std,
-        "ori_q_mean": ori_q_mean,
-        "ori_q_std": ori_q_std,
-    }
-    return log_dict
-
-
-def detect_attacked_data(config, dataset, critic):
-    from sklearn import metrics
-
-    if config.corruption_obs:
-        corruption_tag = "obs"
-    if config.corruption_act:
-        corruption_tag = "act"
-    if config.corruption_rew:
-        corruption_tag = "rew"
-    if config.corruption_next_obs:
-        corruption_tag = "next_obs"
-    dataset_file = f"{config.corruption_agent}_{config.corruption_mode}_{corruption_tag}_corrupt{config.corruption_range}_rate{config.corruption_rate}.pth"
-    dataset_path = os.path.expanduser(
-        os.path.join(config.dataset_path, "log_attack_data", config.env, dataset_file)
-    )
-    attack_dataset = torch.load(dataset_path)
-    print(f"Load new dataset from {dataset_path}")
-    att_indexs, ori_indexs = (
-        attack_dataset["attack_indexs"],
-        attack_dataset["original_indexs"],
-    )
-    labels = np.ones(len(dataset["actions"]))
-    labels[att_indexs] = 0
-
-    act = torch.from_numpy(dataset["actions"]).to(config.device)
-    obs = torch.from_numpy(dataset["observations"]).to(config.device)
-
-    split = 20
-    pointer = 0
-    M = act.shape[0]
-    q_values = []
-    for i in range(split):
-        number = M // split if i < split - 1 else M - pointer
-        temp_obs = obs[pointer : pointer + number]
-        temp_act = act[pointer : pointer + number]
-        with torch.no_grad():
-            temp_q = critic(temp_obs, temp_act)
-        q_values.append(temp_q.detach().cpu().numpy())
-        pointer += number
-    q_values = np.hstack(q_values)
-    q_std = q_values.std(axis=0)
-    # threshold = np.quantile(q_std, 0.7)
-    pred_ori_indexs = np.where(q_std <= config.threshold)[0]
-    pred_att_indexs = np.where(q_std > config.threshold)[0]
-    predict = np.ones(len(q_std))
-    predict[pred_att_indexs] = 0
-    tn, fp, fn, tp = metrics.confusion_matrix(labels, predict).ravel()
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
-    acc_ori = tp / (len(ori_indexs))  # recall
-    acc_att = tn / (len(att_indexs))  # specificity
-    pre_ori = tp / (len(pred_ori_indexs) + 1e-20)
-    pre_att = tn / (len(pred_att_indexs) + 1e-20)
-    log_dict = {
-        "acc": accuracy,
-        "acc_ori": acc_ori,
-        "acc_att": acc_att,
-        "pre_ori": pre_ori,
-        "pre_att": pre_att,
-    }
-    return log_dict
 
 
 def asdict(config):
@@ -375,6 +259,7 @@ def load_clean_dataset(config):
         )
         dataset = gym.make(config.env).get_dataset(h5path=h5path)
     return dataset
+
 
 def get_state_std(config):
     clean_dataset = load_clean_dataset(config)

@@ -17,18 +17,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.distributions import MultivariateNormal
-from torch.optim.lr_scheduler import CosineAnnealingLR
 from dataclasses import dataclass
 from pathlib import Path
 from tqdm import trange
 from logger import init_logger, Logger
 
-from select_data import select_fn
 from attack import attack_dataset
 from replay_buffer import ReplayBuffer
 from networks import MLP
 
-from CQL import Scalar
 from attack import Evaluation_Attacker
 
 TensorBatch = List[torch.Tensor]
@@ -61,7 +58,6 @@ class TrainConfig:
     # Wandb logging
     use_wandb: int = 0
     group: str = "2023082100"
-    # env: str = "halfcheetah-medium-v2"
     env: str = "walker2d-medium-replay-v2"
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     # evaluation params
@@ -267,7 +263,6 @@ class BCLearning:
         max_action: float,
         actor: nn.Module,
         actor_optimizer: torch.optim.Optimizer,
-        max_steps: int = 1000000,
         wmse_coef: float = 1.0,
         device: str = "cpu",
     ):
@@ -275,7 +270,6 @@ class BCLearning:
         self.wmse_coef = wmse_coef
         self.actor = actor
         self.actor_optimizer = actor_optimizer
-        # self.actor_lr_schedule = CosineAnnealingLR(self.actor_optimizer, max_steps)
 
         self.total_it = 0
         self.device = device
@@ -299,7 +293,6 @@ class BCLearning:
         self.actor_optimizer.zero_grad(set_to_none=True)
         policy_loss.backward()
         self.actor_optimizer.step()
-        # self.actor_lr_schedule.step()
 
     def train(self, batch: TensorBatch) -> Dict[str, float]:
         self.total_it += 1
@@ -312,15 +305,12 @@ class BCLearning:
         return {
             "actor": self.actor.state_dict(),
             "actor_optimizer": self.actor_optimizer.state_dict(),
-            # "actor_lr_schedule": self.actor_lr_schedule.state_dict(),
             "total_it": self.total_it,
         }
 
     def load_state_dict(self, state_dict: Dict[str, Any]):
         self.actor.load_state_dict(state_dict["actor"])
         self.actor_optimizer.load_state_dict(state_dict["actor_optimizer"])
-        # self.actor_lr_schedule.load_state_dict(state_dict["actor_lr_schedule"])
-
         self.total_it = state_dict["total_it"]
 
 
@@ -352,9 +342,6 @@ def train(config: TrainConfig, logger: Logger):
     ##### corrupt
     if config.corruption_mode != "none":
         dataset, attack_indexs = attack_dataset(config, dataset, logger)
-
-    if config.selection_agent != "none":
-        dataset = select_fn(config, dataset, logger)
 
     dataset = d4rl.qlearning_dataset(env, dataset, terminate_on_end=True)
     dataset, state_mean, state_std = func.normalize_dataset(config, dataset)
@@ -492,9 +479,6 @@ def test(config: TrainConfig, logger: Logger):
     ##### corrupt
     if config.corruption_mode != "none":
         dataset, attack_indexs = attack_dataset(config, dataset, logger)
-
-    if config.selection_agent != "none":
-        dataset = select_fn(config, dataset, logger)
 
     dataset = d4rl.qlearning_dataset(env, dataset, terminate_on_end=True)
     dataset, state_mean, state_std = func.normalize_dataset(config, dataset)
