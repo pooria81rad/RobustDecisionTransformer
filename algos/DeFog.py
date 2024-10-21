@@ -1,13 +1,13 @@
 # inspiration:
 # 1. https://github.com/hukz18/DeFog  # noqa
-import os
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+
 import traceback
 import json
 import time
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
-
 import d4rl  # noqa
 import gym
 import numpy as np
@@ -15,17 +15,18 @@ import pyrallis
 import torch
 import wandb
 import math
+import utils.functions as func
+
 from torch import nn
 from torch.nn import functional as F
 from tqdm.auto import trange  # noqa
-
-import functions as func
-
-from networks import TransformerBlock
-from logger import init_logger, Logger
-from attack import attack_dataset
-from drop_fn import get_drop_fn
-from attack import Evaluation_Attacker
+from collections import defaultdict
+from dataclasses import dataclass
+from utils.networks import TransformerBlock
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset
+from utils.drop_fn import get_drop_fn
+from utils.attack import Evaluation_Attacker
 
 
 @dataclass

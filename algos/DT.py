@@ -1,27 +1,28 @@
 # inspiration:
 # 1. https://github.com/kzl/decision-transformer/blob/master/gym/decision_transformer/models/decision_transformer.py  # noqa
 # 2. https://github.com/karpathy/minGPT
-import os
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from typing import Optional, Tuple
+
 import traceback
 import time
 import json
-from dataclasses import dataclass
-from typing import Optional, Tuple
-
 import d4rl  # noqa
 import gym
 import numpy as np
 import pyrallis
 import torch
 import wandb
+import utils.functions as func
+import utils.dt_functions as dt_func
+
 from torch.nn import functional as F
 from tqdm.auto import trange  # noqa
-
-import functions as func
-import dt_functions as dt_func
-
-from logger import init_logger, Logger
-from attack import Evaluation_Attacker
+from dataclasses import dataclass
+from utils.logger import init_logger, Logger
+from utils.attack import Evaluation_Attacker
 
 
 @dataclass

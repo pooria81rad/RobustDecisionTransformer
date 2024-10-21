@@ -1,9 +1,10 @@
 # source: https://github.com/gwthomas/IQL-PyTorch
 # https://arxiv.org/pdf/2110.06169.pdf
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-import functions as func
 import time
 import json
 import copy
@@ -17,14 +18,15 @@ import math
 import numpy as np
 import torch
 import torch.nn as nn
+import utils.functions as func
 
 from torch.distributions import MultivariateNormal
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from dataclasses import dataclass
 from tqdm import trange
-from logger import init_logger, Logger
-from attack import attack_dataset, Evaluation_Attacker
-from networks import MLP
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset, Evaluation_Attacker
+from utils.networks import MLP
 
 TensorBatch = List[torch.Tensor]
 

@@ -1,3 +1,6 @@
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from typing import Optional, Tuple
 
 import os
@@ -10,17 +13,15 @@ import numpy as np
 import pyrallis
 import torch
 import wandb
+import utils.functions as func
+import utils.dt_functions as dt_func
 
 from tqdm.auto import trange  # noqa
 from torch.nn import functional as F
 from dataclasses import dataclass
-
-import functions as func
-import dt_functions as dt_func
-
-from logger import init_logger, Logger
-from attack import Evaluation_Attacker
-from run_mean_std import RunningMeanStd
+from utils.logger import init_logger, Logger
+from utils.attack import Evaluation_Attacker
+from utils.run_mean_std import RunningMeanStd
 
 
 @dataclass
@@ -87,14 +88,14 @@ class TrainConfig:
     ###### corruption
     corruption_agent: str = "IQL"
     corruption_seed: int = 2023
-    corruption_mode: str = "adversarial"  # none, random, adversarial
-    corruption_obs: float = 0.2
+    corruption_mode: str = "none"  # none, random, adversarial
+    corruption_obs: float = 0.0
     corruption_act: float = 0.0
     corruption_rew: float = 0.0
     corruption_rate: float = 0.3
     use_original: int = 0  # 0 or 1
     same_index: int = 0
-    froce_attack: int = 1
+    froce_attack: int = 0
 
     def __post_init__(self):
         # target_returns and reward_scale

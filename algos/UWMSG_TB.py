@@ -1,29 +1,31 @@
-from typing import Any, Dict, List, Optional, Tuple, DefaultDict
-from copy import deepcopy
-from dataclasses import dataclass
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-import dt_functions as dt_func
-import functions as func
+from typing import Any, Dict, List, Optional, Tuple, DefaultDict
+
 import time
 import math
 import os
 import traceback
 import json
-
 import d4rl
 import gym
 import numpy as np
 import pyrallis
 import torch
-from torch.distributions import Normal
 import torch.nn as nn
-from tqdm import trange
 import wandb
+import utils.dt_functions as dt_func
+import utils.functions as func
 
+from tqdm import trange
+from copy import deepcopy
+from dataclasses import dataclass
 from collections import defaultdict
-from logger import init_logger, Logger
-from attack import attack_dataset
-from attack import Evaluation_Attacker
+from torch.distributions import Normal
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset
+from utils.attack import Evaluation_Attacker
 
 # general utils
 TensorBatch = List[torch.Tensor]

@@ -1,11 +1,12 @@
 # source: https://github.com/gwthomas/IQL-PyTorch
 # https://arxiv.org/pdf/2110.06169.pdf
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from typing import Any, Dict, List, Optional
 
-import functions as func
 import time
 import json
-import os
 import wandb
 import traceback
 import pyrallis
@@ -14,19 +15,17 @@ import gym
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import utils.functions as func
 
 from torch.distributions import MultivariateNormal
 from dataclasses import dataclass
 from pathlib import Path
 from tqdm import trange
-from logger import init_logger, Logger
-
-from attack import attack_dataset
-from replay_buffer import ReplayBuffer
-from networks import MLP
-
-from attack import Evaluation_Attacker
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset
+from utils.replay_buffer import ReplayBuffer
+from utils.networks import MLP
+from utils.attack import Evaluation_Attacker
 
 TensorBatch = List[torch.Tensor]
 
@@ -54,7 +53,6 @@ class TrainConfig:
     deterministic: bool = True  # Use deterministic actor
     normalize: bool = False  # Normalize states
     normalize_reward: bool = False  # Normalize reward
-    wmse_coef: float = 1.0
     # Wandb logging
     use_wandb: int = 0
     group: str = "2023082100"
@@ -72,9 +70,6 @@ class TrainConfig:
     logdir: str = "~/results/corruption"
     dataset_path: str = "/apdcephfs/share_1563664/ztjiaweixu/datasets"
     sample_ratio: float = 1.0
-    ###### selection
-    selection_agent: str = "none"
-    threshold: float = 1.0
     ###### corruption
     corruption_agent: str = "IQL"
     corruption_seed: int = 2023
@@ -118,52 +113,10 @@ class TrainConfig:
         key = self.env.split("-")[0]
         if key in ["door", "pen", "hammer", "relocate"]:
             self.sample_ratio = 0.01
-        if self.corruption_mode == "random":
-            if "medium-replay" in self.env and self.sample_ratio == 1.0:
-                self.wmse_coef = 1.0
-            if "medium-replay" in self.env and self.sample_ratio == 0.1:
-                self.wmse_coef = 1.0
-                if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                    self.wmse_coef = 0.1
-            if self.env.startswith("kitchen"):
-                self.wmse_coef = 10.0
-            if self.env.split("-")[0] in ["door", "pen", "hammer", "relocate"]:
-                if self.corruption_obs > 0.0:
-                    self.wmse_coef = 0.1
-                if self.corruption_act > 0.0:
-                    self.wmse_coef = 10.0
-                if self.corruption_rew > 0.0:
-                    self.wmse_coef = 0.1
-                if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                    self.wmse_coef = 0.1
-        elif self.corruption_mode == "adversarial":
-            if "medium-replay" in self.env and self.sample_ratio == 0.1:
-                self.wmse_coef = 1.0
-                if self.corruption_obs > 0.0:
-                    self.wmse_coef = 0.1
-                if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                    self.wmse_coef = 0.1
-            if self.env.startswith("kitchen"):
-                self.wmse_coef = 10.0
-                if self.corruption_act > 0.0:
-                    self.wmse_coef = 20.0
-                if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                    self.wmse_coef = 30.0
-            if self.env.split("-")[0] in ["door", "pen", "hammer", "relocate"]:
-                if self.corruption_obs > 0.0:
-                    self.wmse_coef = 0.1
-                if self.corruption_act > 0.0:
-                    self.wmse_coef = 10.0
-                if self.corruption_rew > 0.0:
-                    self.wmse_coef = 0.1
-                if self.corruption_rew > 0.0 and self.corruption_obs > 0.0 and self.corruption_act > 0.0:
-                    self.wmse_coef = 0.1
-        
         if self.corruption_mode == "random" and self.corruption_rew > 0.0:
             self.corruption_rew *= 30
         # evaluation
         if self.eval_only:
-            self.eval_episodes = 100
             if self.corruption_obs > 0: corruption_tag = "obs"
             elif self.corruption_act > 0: corruption_tag = "act"
             elif self.corruption_rew > 0: corruption_tag = "rew"
@@ -263,11 +216,9 @@ class BCLearning:
         max_action: float,
         actor: nn.Module,
         actor_optimizer: torch.optim.Optimizer,
-        wmse_coef: float = 1.0,
         device: str = "cpu",
     ):
         self.max_action = max_action
-        self.wmse_coef = wmse_coef
         self.actor = actor
         self.actor_optimizer = actor_optimizer
 
@@ -281,16 +232,12 @@ class BCLearning:
         elif torch.is_tensor(policy_out):
             if policy_out.shape != actions.shape:
                 raise RuntimeError("Actions shape missmatch")
-            with torch.no_grad():
-                diff = torch.square(policy_out.detach() - actions.detach()).mean(-1, keepdim=True)
-                weight = torch.exp(-self.wmse_coef * diff)
-            bc_losses = F.mse_loss(policy_out, actions.detach(), reduction="none")
-            bc_losses = (bc_losses * weight)
+            bc_losses = torch.sum((policy_out - actions) ** 2, dim=1)
         else:
             raise NotImplementedError
         policy_loss = torch.mean(bc_losses)
         log_dict["actor_loss"] = policy_loss.item()
-        self.actor_optimizer.zero_grad(set_to_none=True)
+        self.actor_optimizer.zero_grad()
         policy_loss.backward()
         self.actor_optimizer.step()
 
@@ -322,7 +269,6 @@ def train(config: TrainConfig, logger: Logger):
         func.wandb_init(config)
 
     env = gym.make(config.env)
-    env.seed(config.seed)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
@@ -347,6 +293,7 @@ def train(config: TrainConfig, logger: Logger):
     dataset, state_mean, state_std = func.normalize_dataset(config, dataset)
 
     env = func.wrap_env(env, state_mean=state_mean, state_std=state_std)
+    env.seed(config.seed)
 
     buffer = ReplayBuffer(
         state_dim,
@@ -379,7 +326,6 @@ def train(config: TrainConfig, logger: Logger):
         "actor": actor,
         "actor_optimizer": actor_optimizer,
         "max_action": max_action,
-        "wmse_coef": config.wmse_coef,
         "device": config.device,
     }
 
@@ -459,7 +405,6 @@ def test(config: TrainConfig, logger: Logger):
     func.set_seed(config.seed)
 
     env = gym.make(config.env)
-    env.seed(config.seed)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
@@ -484,6 +429,7 @@ def test(config: TrainConfig, logger: Logger):
     dataset, state_mean, state_std = func.normalize_dataset(config, dataset)
 
     env = func.wrap_env(env, state_mean=state_mean, state_std=state_std)
+    env.seed(config.seed)
 
     actor = (
         DeterministicPolicy(
@@ -516,7 +462,10 @@ def test(config: TrainConfig, logger: Logger):
 def main(config: TrainConfig):
     logger = init_logger(config)
     try:
-        train(config, logger)
+        if config.eval_only:
+            test(config, logger)
+        else:
+            train(config, logger)
     except Exception:
         error_info = traceback.format_exc()
         logger.error(f"\n{error_info}")

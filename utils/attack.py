@@ -1,16 +1,18 @@
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from typing import Dict
 
-import os
 import copy
 import gym
 import d4rl
 import torch
-import torch.nn as nn
 import numpy as np
 import pytorch_util as ptu
 
-from torch.distributions import kl_divergence
 from logger import Logger
+
 
 DATA_NAMSE = {
     "obs": "observations",
@@ -18,8 +20,9 @@ DATA_NAMSE = {
     "rew": "rewards",
 }
 
+
 MODEL_PATH = {
-    "IQL": os.path.join(os.path.dirname(__file__), "IQL_model"),
+    "IQL": os.path.join(os.path.dirname(os.path.dirname(__file__)), "IQL_model"),
 }
 
 
@@ -39,7 +42,6 @@ def optimize_para(para, observation, loss_fun, update_times, step_size, eps, std
         optimizer.zero_grad()
         loss.mean().backward()
         optimizer.step()
-        # para = torch.clamp(para, -eps, eps).detach()
         para = torch.maximum(torch.minimum(para, eps * std), -eps * std).detach()
     return para
 
@@ -57,7 +59,6 @@ class Evaluation_Attacker:
             self.obs_std = torch.ones(1, self.obs_dim, device=ptu.device)
         else:
             self.obs_std = ptu.from_numpy(obs_std)
-        # self.obs_std = ptu.from_numpy(obs_std) if obs_std is not None else torch.ones(1, self.obs_dim, device=ptu.device)
         if attack_mode != "random":
             self.load_model()
 
@@ -98,7 +99,7 @@ class Evaluation_Attacker:
         model_path = os.path.join(self.model_path, self.env_name, "3000.pt")
         state_dict = torch.load(model_path, map_location=ptu.device)
         if self.agent_name == "IQL":
-            from IQL import DeterministicPolicy
+            from algos.IQL import DeterministicPolicy
 
             actor_dropout = None
             key = self.env_name.split("-")[0]
@@ -190,7 +191,7 @@ class Attack:
         model_path = os.path.join(self.model_path, self.env_name, "3000.pt")
         state_dict = torch.load(model_path, map_location=self.device)
         if self.agent_name == "IQL":
-            from IQL import TwinQ
+            from algos.IQL import TwinQ
 
             self.critic = (
                 TwinQ(self.state_dim, self.action_dim, n_hidden=2)

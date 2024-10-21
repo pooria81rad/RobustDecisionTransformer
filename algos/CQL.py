@@ -1,12 +1,14 @@
 # source: https://github.com/young-geng/CQL/tree/934b0e8354ca431d6c083c4e3a29df88d4b0a24d
 # STRONG UNDER-PERFORMANCE ON PART OF ANTMAZE TASKS. BUT IN IQL PAPER IT WORKS SOMEHOW
 # https://arxiv.org/pdf/2006.04779.pdf
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from typing import Any, Dict, List, Optional, Tuple
-import functions as func
+
 import time
 import json
 import copy
-import os
 import wandb
 import traceback
 import pyrallis
@@ -16,17 +18,17 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import utils.functions as func
 
 from torch.distributions import Normal, TanhTransform, TransformedDistribution
 from dataclasses import dataclass
 from pathlib import Path
 from tqdm import trange
-from logger import init_logger, Logger
-
-from attack import attack_dataset
-from replay_buffer import ReplayBuffer
-from networks import Scalar, MLP
-from attack import Evaluation_Attacker
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset
+from utils.replay_buffer import ReplayBuffer
+from utils.networks import Scalar, MLP
+from utils.attack import Evaluation_Attacker
 
 TensorBatch = List[torch.Tensor]
 

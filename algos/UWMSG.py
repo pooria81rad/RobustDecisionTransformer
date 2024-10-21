@@ -1,28 +1,29 @@
-from typing import Any, Dict, List, Optional, Tuple
-from copy import deepcopy
-from dataclasses import dataclass
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-import functions as func
+from typing import Any, Dict, List, Optional, Tuple
+
 import time
 import math
-import os
 import traceback
 import json
-
+import wandb
 import d4rl
 import gym
 import numpy as np
 import pyrallis
 import torch
-from torch.distributions import Normal
 import torch.nn as nn
-from tqdm import trange
-import wandb
+import utils.functions as func
 
-from logger import init_logger, Logger
-from attack import attack_dataset
-from replay_buffer import ReplayBuffer
-from attack import Evaluation_Attacker
+from tqdm import trange
+from torch.distributions import Normal
+from copy import deepcopy
+from dataclasses import dataclass
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset
+from utils.replay_buffer import ReplayBuffer
+from utils.attack import Evaluation_Attacker
 
 # general utils
 TensorBatch = List[torch.Tensor]

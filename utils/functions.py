@@ -1,6 +1,7 @@
-from typing import Any, Dict, Union, Tuple, Optional
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-import os
+from typing import Any, Dict, Union, Tuple, Optional
 import gym
 import uuid
 import wandb

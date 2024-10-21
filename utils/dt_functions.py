@@ -1,6 +1,7 @@
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-import os
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 import gym
 import numpy as np
 import torch

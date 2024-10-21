@@ -1,8 +1,10 @@
 # source: https://github.com/gwthomas/IQL-PyTorch
 # https://arxiv.org/pdf/2110.06169.pdf
+import os, sys
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
 from typing import Optional, Tuple, Dict, List, Any, DefaultDict
 
-import os
 import time
 import json
 import copy
@@ -16,15 +18,15 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import functions as func
-import dt_functions as dt_func
+import utils.functions as func
+import utils.dt_functions as dt_func
 
 from tqdm import trange
 from dataclasses import dataclass
 from collections import defaultdict
-from logger import init_logger, Logger
-from attack import attack_dataset, Evaluation_Attacker
-from networks import MLP
+from utils.logger import init_logger, Logger
+from utils.attack import attack_dataset, Evaluation_Attacker
+from utils.networks import MLP
 
 EXP_ADV_MAX = 100.0
 
