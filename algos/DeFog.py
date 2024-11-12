@@ -82,12 +82,12 @@ class TrainConfig:
     eval_attack: bool = True
     eval_attack_eps: float = 0.01
     eval_attack_mode: str = "random"
-    checkpoint_dir: str = "/apdcephfs/share_1563664/ztjiaweixu/rdt_sz/NIPS2024_res/rnd/obs"
+    checkpoint_dir: str = None
     ######## others
     debug: bool = False
     alg_type: str = os.path.basename(__file__).rstrip(".py")
     logdir: str = "~/results/corruption"
-    dataset_path: str = "/apdcephfs/share_1563664/ztjiaweixu/datasets"
+    dataset_path: str = "your_path_of_dataset"
     sample_ratio: float = 1.0
     ###### corruption
     corruption_agent: str = "EDAC"

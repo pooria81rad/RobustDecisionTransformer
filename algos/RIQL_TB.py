@@ -94,7 +94,7 @@ class TrainConfig:
     ######## others
     alg_type: str = os.path.basename(__file__).rstrip(".py")
     logdir: str = "~/results/corruption"
-    dataset_path: str = "/apdcephfs/share_1563664/ztjiaweixu/datasets"
+    dataset_path: str = "your_path_of_dataset"
     save_model: bool = False
     ###### corruption
     corruption_agent: str = "IQL"

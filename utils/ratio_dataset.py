@@ -56,6 +56,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_name", type=str, default="walker2d-medium-replay-v2")
     parser.add_argument("--ratio", type=float, default=0.1)
-    parser.add_argument("--dataset_path", type=str, default="/apdcephfs/share_1563664/ztjiaweixu/datasets")
+    parser.add_argument("--dataset_path", type=str, default="your_path_of_dataset")
     args = parser.parse_args()
     ratio_dataset(args.dataset_path, args.env_name, args.ratio)
