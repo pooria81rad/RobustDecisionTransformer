@@ -62,10 +62,10 @@ class TrainConfig:
     env: str = "walker2d-medium-replay-v2"
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     flag: str = "test"
-    sigma: float = 0.1
+    sigma: float = 1.0
     num_actors: int = 1
     num_critics: int = 5
-    quantile: float = 0.1
+    quantile: float = 0.25
     # evaluation params
     eval_id: str = "00"
     eval_only: bool = False
@@ -107,54 +107,82 @@ class TrainConfig:
             self.iql_tau = 0.9
             self.normalize_reward = True
             self.buffer_size = 1000000
-        if self.corruption_obs:
-            self.sigma = {
-                "walker2d": 0.1,
-                "hopper": 0.1,
-                "halfcheetah": 0.1,
-            }.get(key, 0.1)
-            self.quantile = {
-                "walker2d": 0.25,
-                "hopper": 0.25,
-                "halfcheetah": 0.1,
-            }.get(key, 0.1)
-            if key == "hopper":
-                self.num_critics = 3
-        elif self.corruption_act:
-            self.sigma = {
-                "walker2d": 0.5,
-                "hopper": 0.1,
-                "halfcheetah": 0.5,
-            }.get(key, 0.1)
-            self.quantile = {
-                "walker2d": 0.1,
-                "hopper": 0.25,
-                "halfcheetah": 0.25,
-            }.get(key, 0.1)
-            if key == "halfcheetah":
-                self.num_critics = 3
-        elif self.corruption_rew:
-            self.sigma = {
-                "walker2d": 3.0,
-                "hopper": 1.0,
-                "halfcheetah": 3.0,
-            }.get(key, 0.1)
-            self.quantile = {
-                "walker2d": 0.1,
-                "hopper": 0.25,
-                "halfcheetah": 0.25,
-            }.get(key, 0.1)
-        elif self.corruption_next_obs:
-            self.sigma = {
-                "walker2d": 1.0,
-                "hopper": 1.0,
-                "halfcheetah": 3.0,
-            }.get(key, 0.1)
-            self.quantile = {
-                "walker2d": 0.25,
-                "hopper": 0.5,
-                "halfcheetah": 0.25,
-            }.get(key, 0.1)
+        if self.corruption_mode == "random":
+            if self.corruption_obs:
+                self.sigma = {
+                    "walker2d": 0.1,
+                    "hopper": 0.1,
+                    "halfcheetah": 0.1,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.25,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.1,
+                }.get(key, 0.25)
+                if key == "hopper":
+                    self.num_critics = 3
+            elif self.corruption_act:
+                self.sigma = {
+                    "walker2d": 0.5,
+                    "hopper": 0.1,
+                    "halfcheetah": 0.5,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.1,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.25,
+                }.get(key, 0.25)
+                if key == "halfcheetah":
+                    self.num_critics = 3
+            elif self.corruption_rew:
+                self.sigma = {
+                    "walker2d": 3.0,
+                    "hopper": 1.0,
+                    "halfcheetah": 3.0,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.1,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.25,
+                }.get(key, 0.25)
+        elif self.corruption_mode == "adversarial":
+            if self.corruption_obs:
+                self.sigma = {
+                    "walker2d": 1.0,
+                    "hopper": 1.0,
+                    "halfcheetah": 0.1,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.25,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.1,
+                }.get(key, 0.25)
+                if key == "hopper":
+                    self.num_critics = 3
+            elif self.corruption_act:
+                self.sigma = {
+                    "walker2d": 1.0,
+                    "hopper": 1.0,
+                    "halfcheetah": 1.0,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.1,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.1,
+                }.get(key, 0.25)
+                if key == "halfcheetah":
+                    self.num_critics = 3
+            elif self.corruption_rew:
+                self.sigma = {
+                    "walker2d": 3.0,
+                    "hopper": 0.1,
+                    "halfcheetah": 1.0,
+                }.get(key, 1.0)
+                self.quantile = {
+                    "walker2d": 0.1,
+                    "hopper": 0.25,
+                    "halfcheetah": 0.1,
+                }.get(key, 0.25)
         # sample ratio
         if self.down_sample:
             if self.env.startswith("kitchen"):
