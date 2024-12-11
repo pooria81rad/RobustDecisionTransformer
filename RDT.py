@@ -296,7 +296,7 @@ def compute_loss(config, model, batch):
     log_dict, debug_dict = {}, {}
     states, actions, returns, rewards, time_steps, mask, attack_mask, traj_indexs = [b.to(config.device) for b in batch]
     # True value indicates that the corresponding key value will be ignored
-    padding_mask = mask.to(torch.bool)
+    padding_mask = ~mask.to(torch.bool)
 
     predicted = model(
         states=states,

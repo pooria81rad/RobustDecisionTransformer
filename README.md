@@ -5,14 +5,14 @@
 1. **Generate the Downsampled Dataset:**
    ```
    cd utils
-   python ratio_dataset --env_name walker2d-medium-replay-v2 --ratio 0.1
+   python ratio_dataset.py --env_name walker2d-medium-replay-v2 --ratio 0.1
    ```
 
 2. **Reproduce the Results from the Paper:**
 
    **For Random State Corruption:**
    ```
-   python RDT --seed 0 --env walker2d-medium-replay-v2 \
+   python -m RDT --seed 0 --env walker2d-medium-replay-v2 \
               --corruption_seed 0 \
               --corruption_mode random \
               --corruption_obs 1.0 \
@@ -22,7 +22,7 @@
 
    **For Adversarial State Corruption:**
    ```
-   python RDT --seed 0 --env walker2d-medium-replay-v2 \
+   python -m RDT --seed 0 --env walker2d-medium-replay-v2 \
               --corruption_agent IQL \
               --corruption_mode adversarial \
               --corruption_obs 1.0 \
