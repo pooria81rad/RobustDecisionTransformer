@@ -46,7 +46,7 @@ google-auth-httplib2==0.2.0
 google-reauth==0.1.1
 gsutil==5.31
 gtimer==1.0.0b5
-gym==0.19.0
+gym
 h5py==3.8.0
 httplib2==0.20.4
 huggingface-hub==0.16.4
