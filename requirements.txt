@@ -65,7 +65,7 @@ loralib==0.1.2
 lxml==4.9.3
 matplotlib==3.5.3
 matplotlib-inline==0.1.6
-mjrl @ git+https://github.com/aravindr93/mjrl@3871d93763d3b49c4741e6daeaebbc605fe140dc
+mjrl
 monotonic==1.6
 moviepy==1.0.3
 msgpack==1.0.5
