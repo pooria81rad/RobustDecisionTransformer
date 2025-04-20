@@ -21,7 +21,6 @@ crcmod==1.7
 cryptography==43.0.3
 cycler==0.11.0
 Cython==0.29.36
--e git+https://github.com/Farama-Foundation/D4RL.git@71a9549f2091accff93eeff68f1f3ab2c0e0a288#egg=D4RL
 -e git+https://github.com/takuseno/d4rl-atari.git@039d1a935ca932b916c544feaa63b9b6ae73e293#egg=d4rl_atari
 datasets==2.13.2
 decorator==4.4.2
@@ -65,7 +64,6 @@ loralib==0.1.2
 lxml==4.9.3
 matplotlib==3.5.3
 matplotlib-inline==0.1.6
-mjrl
 monotonic==1.6
 moviepy==1.0.3
 msgpack==1.0.5
